@@ -109,6 +109,18 @@ def header_check(self):
     self.wfile.write(json.dumps(errors))
 
 
+def die_on_method(self):
+    response = 405
+    errors = []
+    errors.append("Method Not Allowed")
+    if 'Host' not in self.headers:
+        errors.append("No Host header found")
+    self.send_response(response)
+    self.send_header("Content-type", "application/json")
+    self.end_headers()
+    self.wfile.write(json.dumps(errors))
+
+
 def post_header_check(self):
     response = 200
     errors = []
@@ -186,6 +198,7 @@ class TestHTTPClient(unittest.TestCase):
     def testGETHeaders(self):
         '''Test HTTP GET Headers'''
         MyHTTPHandler.get = header_check
+        MyHTTPHandler.post = die_on_method
         http = httpclass.HTTPClient()
         path = "abcdef/gjkd/dsadas"
         url = "http://%s:%d/%s" % (BASEHOST, BASEPORT, path)
@@ -196,6 +209,7 @@ class TestHTTPClient(unittest.TestCase):
     def testPOSTHeaders(self):
         '''Test HTTP POST Headers'''
         MyHTTPHandler.post = post_header_check
+        MyHTTPHandler.get = die_on_method
         http = httpclass.HTTPClient()
         path = "abcdef/gjkd/dsadas"
         url = "http://%s:%d/%s" % (BASEHOST, BASEPORT, path)
