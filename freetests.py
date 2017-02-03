@@ -195,7 +195,7 @@ class TestHTTPClient(unittest.TestCase):
 
     def testPOSTHeaders(self):
         '''Test HTTP POST Headers'''
-        MyHTTPHandler.get = post_header_check
+        MyHTTPHandler.post = post_header_check
         http = httpclass.HTTPClient()
         path = "abcdef/gjkd/dsadas"
         url = "http://%s:%d/%s" % (BASEHOST, BASEPORT, path)
