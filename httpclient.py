@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-# Copyright 2016 Abram Hindle, https://github.com/tywtyw2002, and https://github.com/treedust
+# Copyright 2016 Abram Hindle, https://github.com/tywtyw2002, and https://github.com/treedust, Omar Almokdad
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,45 +21,29 @@
 import sys
 import socket
 import re
-# you may use urllib to encode data appropriately
 import urllib
 
-
+# show correct way to use the program
 def help():
     print "httpclient.py [GET/POST] [URL]\n"
 
-
+# Class for the return of the response
 class HTTPResponse(object):
 
     def __init__(self, code=200, body=""):
         self.code = code
         self.body = body
 
-
+# Class to act as client
 class HTTPClient(object):
-    # def get_host_port(self,url):
 
-    def connect(self, host, port):
+    # connect to the specified host at the specified port (default to 80)
+    def connect(self, host, port=80):
         # use sockets!
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((host, port))
 
         return s
-
-    def get_code(self, data):
-        return int(data.split(" ")[1])
-
-    def get_headers_and_body(self, data):
-        dataList = data.split("\n")
-        body = ""
-        headers = ""
-        dataList.pop(0)
-        while(dataList[0] != '\r'):
-            headers = headers + dataList.pop(0) + "\n"
-        dataList.pop(0)
-        while(dataList):
-            body = body + dataList.pop(0) + "\n"
-        return headers, body
 
     # read everything from the socket
     def recvall(self, sock):
@@ -74,11 +58,34 @@ class HTTPClient(object):
                 done = not part
         return str(buffer)
 
+    # get the code of the reply (second word of the reply)
+    def get_code(self, data):
+        return int(data.split(" ")[1])
+
+    # get the headers and body of the reply
+    def get_headers_and_body(self, data):
+        dataList = data.split("\n")
+        body = ""
+        headers = ""
+        dataList.pop(0)
+        # save the headers line by line
+        while(dataList[0] != '\r'):
+            headers = headers + dataList.pop(0) + "\n"
+        dataList.pop(0)
+        # save the body line by line
+        while(dataList):
+            body = body + dataList.pop(0) + "\n"
+        return headers, body
+
+    # send a GET request, and process the reply
     def GET(self, url, args=None):
         command = url.split("/")
+        # if "http://" is part of the request
         if command[0] == "http:":
             command.pop(0)
             command.pop(0)
+
+        # get the host and the port
         hostAndPort = command.pop(0)
         hostPortList = hostAndPort.split(":")
         host = hostPortList[0]
@@ -86,10 +93,15 @@ class HTTPClient(object):
             port = int(hostPortList[1])
         else:
             port = 80
+
+        # connect to host
         s = self.connect(host, port)
+
+        # construct the message to send
         content = "/".join(command)
         message = "GET /" + content + " HTTP/1.1\r\nHost: " + host + "\r\n\r\n"
-        print message
+
+        # send and process return
         s.send(message)
         data = self.recvall(s)
         code = self.get_code(data)
@@ -97,11 +109,15 @@ class HTTPClient(object):
         print data
         return HTTPResponse(code, body)
 
+    # send a post request, and process the reply
     def POST(self, url, args=None):
         command = url.split("/")
+        # if "http://" is part of the request
         if command[0] == "http:":
             command.pop(0)
             command.pop(0)
+
+        # get the host and the port
         hostAndPort = command.pop(0)
         hostPortList = hostAndPort.split(":")
         host = hostPortList[0]
@@ -109,7 +125,11 @@ class HTTPClient(object):
             port = int(hostPortList[1])
         else:
             port = 80
+
+        # connect to host
         s = self.connect(host, port)
+
+        # construct the message to send
         content = "/".join(command)
         message = "POST /" + content + " HTTP/1.1\r\nHost: " + host + "\r\n"
 
@@ -121,19 +141,22 @@ class HTTPClient(object):
             message = message + query
         else:
             message = message + "Content-length: 0\r\n\r\n"
-        print message
+
+        # send and process return
         s.send(message)
         data = self.recvall(s)
         code = self.get_code(data)
         headers, body = self.get_headers_and_body(data)
         return HTTPResponse(code, body)
 
+    # sort GET from POST
     def command(self, url, command="GET", args=None):
         if (command == "POST"):
             return self.POST(url, args)
         else:
             return self.GET(url, args)
 
+# main program logic
 if __name__ == "__main__":
     client = HTTPClient()
     command = "GET"
